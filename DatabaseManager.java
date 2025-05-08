@@ -1,5 +1,3 @@
-package ModuloCompras;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,8 +9,8 @@ public class DatabaseManager {
         return conn;
     }
 
-    public DatabaseManager(String dbPath) throws SQLException {
-        String url = "jdbc:sqlite:" + dbPath;
+    public DatabaseManager() throws SQLException {
+        String url = "jdbc:sqlite:database.db";
         conn = DriverManager.getConnection(url);
         System.out.println("Conexión a SQLite establecida.");
     }

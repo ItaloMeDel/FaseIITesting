@@ -1,5 +1,3 @@
-package ModuloCompras;
-
 import java.sql.Date;
 
 public class PurchaseOrder {

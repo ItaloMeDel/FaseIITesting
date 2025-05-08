@@ -1,5 +1,3 @@
-package ModuloCompras;
-
 public class PurchaseOrderDetail {
     private int id;
     private int purchaseOrderId;

@@ -1,5 +1,3 @@
-package ModuloCompras;
-
 public class Supplier {
     private int id;
     private String companyName;
