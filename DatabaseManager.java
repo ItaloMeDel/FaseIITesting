@@ -1,9 +1,12 @@
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class DatabaseManager {
     private final Connection conn;
+    private static final Pattern EMAIL_REGEX = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
+    private static final Pattern PHONE_REGEX = Pattern.compile("^[+]?[0-9]{7,15}$");
 
     public Connection getConn() {
         return conn;
@@ -22,25 +25,70 @@ public class DatabaseManager {
         }
     }
 
+    // Método de sanitización común
+    private String sanitizeInput(String input) {
+        if (input == null) return null;
+        return input.replaceAll("[^\\p{Print}\\n\\r\\t]", "");
+    }
+
+    // Validación de email
+    private boolean isValidEmail(String email) {
+        return email != null && EMAIL_REGEX.matcher(email).matches();
+    }
+
+    // Validación de teléfono
+    private boolean isValidPhoneNumber(String phone) {
+        return phone != null && PHONE_REGEX.matcher(phone).matches();
+    }
+
+    private boolean isSupplierActive(int supplierId) throws SQLException {
+        String sql = "SELECT status FROM Supplier WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, supplierId);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next() && rs.getBoolean("status");
+        }
+    }
+
+    private boolean isUserActive(int userId) throws SQLException {
+        String sql = "SELECT status FROM User WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next() && rs.getBoolean("status");
+        }
+    }
+
+
     public int createUser(User user) throws SQLException {
+
+        // Validaciones
+        if (user.getName() == null || user.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre es requerido");
+        }
+        if (!isValidEmail(user.getEmail())) {
+            throw new IllegalArgumentException("Formato de email inválido");
+        }
+        if (userExists(user.getEmail())) {
+            throw new SQLException("El email ya está registrado");
+        }
+
         String sql = "INSERT INTO User(name, lastname, email, password_hash, phone_number, role, status) " +
                 "VALUES(?, ?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            pstmt.setString(1, user.getName());
-            pstmt.setString(2, user.getLastname());
-            pstmt.setString(3, user.getEmail());
+            pstmt.setString(1, sanitizeInput(user.getName()));
+            pstmt.setString(2, sanitizeInput(user.getLastname()));
+            pstmt.setString(3, user.getEmail().toLowerCase().trim());
             pstmt.setString(4, user.getPasswordHash());
-            pstmt.setString(5, user.getPhoneNumber());
+            pstmt.setString(5, isValidPhoneNumber(user.getPhoneNumber()) ? user.getPhoneNumber() : null);
             pstmt.setString(6, user.getRole());
             pstmt.setBoolean(7, user.isStatus());
 
             pstmt.executeUpdate();
 
             try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
-                }
+                if (rs.next()) return rs.getInt(1);
             }
         }
         return -1;
@@ -223,6 +271,21 @@ public class DatabaseManager {
 
     public int createPurchaseOrder(PurchaseOrder purchaseOrder,
                                    List<PurchaseOrderDetail> details) throws SQLException {
+
+        // Validación de fechas
+        if (purchaseOrder.getDeliveryDate() != null && purchaseOrder.getDeliveryDate().before(purchaseOrder.getCreationDate())) {
+            throw new IllegalArgumentException("La fecha de entrega no puede ser anterior a la de creación");
+        }
+
+        // Verificar estado del proveedor y usuario
+        if (!isSupplierActive(purchaseOrder.getSupplierId())) {
+            throw new SQLException("El proveedor no está activo");
+        }
+
+        if (!isUserActive(purchaseOrder.getUserId())) {
+            throw new SQLException("El usuario no está activo");
+        }
+
         conn.setAutoCommit(false);
         int orderId = -1;
 
