@@ -9,14 +9,14 @@ public class User {
     private boolean status;
 
     public User(int id, String name, String lastname, String email, String passwordHash, String phoneNumber, String role, boolean status) {
-        this.id = id;
-        this.name = name;
-        this.lastname = lastname;
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.phoneNumber = phoneNumber;
-        this.role = role;
-        this.status = status;
+        setId(id);
+        setName(name);
+        setLastname(lastname);
+        setEmail(email);
+        setPasswordHash(passwordHash);
+        setPhoneNumber(phoneNumber);
+        setRole(role);
+        setStatus(status);
     }
 
     public int getId() {
@@ -24,6 +24,7 @@ public class User {
     }
 
     public void setId(int id) {
+        if (id <= 0) throw new IllegalArgumentException("ID debe ser mayor a cero");
         this.id = id;
     }
 
@@ -32,6 +33,7 @@ public class User {
     }
 
     public void setName(String name) {
+        if (name == null || name.trim().isEmpty()) throw new IllegalArgumentException("Nombre inválido");
         this.name = name;
     }
 
@@ -40,6 +42,7 @@ public class User {
     }
 
     public void setLastname(String lastname) {
+        if (lastname == null || lastname.trim().isEmpty()) throw new IllegalArgumentException("Apellido inválido");
         this.lastname = lastname;
     }
 
@@ -48,6 +51,8 @@ public class User {
     }
 
     public void setEmail(String email) {
+        if (email == null || !email.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"))
+            throw new IllegalArgumentException("Email inválido");
         this.email = email;
     }
 
@@ -56,6 +61,8 @@ public class User {
     }
 
     public void setPasswordHash(String passwordHash) {
+        if (passwordHash == null || passwordHash.length() < 6)
+            throw new IllegalArgumentException("Contraseña demasiado corta o nula");
         this.passwordHash = passwordHash;
     }
 
@@ -64,6 +71,8 @@ public class User {
     }
 
     public void setPhoneNumber(String phoneNumber) {
+        if (phoneNumber == null || !phoneNumber.matches("\\d{9}"))
+            throw new IllegalArgumentException("Teléfono inválido (solo números, 7-15 dígitos)");
         this.phoneNumber = phoneNumber;
     }
 
@@ -72,6 +81,7 @@ public class User {
     }
 
     public void setRole(String role) {
+        if (role == null || role.trim().isEmpty()) throw new IllegalArgumentException("Rol inválido");
         this.role = role;
     }
 
